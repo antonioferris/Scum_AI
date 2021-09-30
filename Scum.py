@@ -16,14 +16,15 @@
 
     This continues until all players have had a turn (which may or may not be because the highest-value card has already been played),
     or opted to pass. When one player runs out of cards, they are out of play for the rest of the round, but the other players can continue
-    to play to figure out the titles. The next president is the first player out of the round, and the next scum is the last remaining. 
+    to play to figure out the titles. The next president is the first player out of the round, and the next scum is the last remaining.
 
 """
 from Cards import Deck, Hand, Card
 from Cards import is_set, compute_playable, default_trade
+from Agents import Agent, AgentView, get_random_agent
 import random
 
-class GameState():
+class GameState:
     def __init__(self, n, names):
         """
             Initialize with n, the number of players,
@@ -50,51 +51,23 @@ class GameState():
         self.passed = [False] * self.n
         self.last_player = 0
 
-class AgentView():
-    def __init__(self, gamestate, i):
-        """
-            Initialize the agentview of the ith player in the game given the gamestate
-        """
-        self.hand = gamestate.hands[i]
-        self.out = gamestate.out
-        self.hand_lengths = [len(hand) for hand in gamestate.hands]
-        self.cards_seen = gamestate.cards_seen
-        self.top_cards = gamestate.top_cards
-        self.passed = gamestate.passed
-        self.last_player = gamestate.last_player
+    def __repr__(self):
+        return "tst"
 
-class Agent():
-    def __init__(self, action_function):
-        """
-            An Agent is initialized with an action_function.
-            This function takes in an AgentView, and returns:
-            1. A legal card or list of cards to be played
-            2. "Pass"
-            Any other input will be interpreted as a pass.
-        """
-        self.action_function = action_function
-
-    def auto_passer(self, top_cards, hand):
-        """
-            Function that auto-passes if no non=pass options are legal
-        """
-        if not top_cards: # can always play on an empty stack
-            return False
-        rank = top_cards[0].rank()
-        num = len(top_cards)
-        return compute_playable(hand)[num-1] < rank
-
-    def get_action(self, view):
-        if self.auto_passer(view.top_cards, view.hand):
-            return "Pass" # pass turn if no playable cards
-        action = self.action_function(view)
-        if isinstance(action, Card):
-            action = [action]
-        return action
+    def __str__(self):
+        s = ""
+        s += "Cards Seen: " + str(self.cards_seen) + "\n"
+        s += "Names: " + str(self.names) + "\n"
+        s += "Hands: " + str(self.hands) + "\n"
+        s += "Out: " + str(self.out) + "\n"
+        s += "Top Cards: " + str(self.top_cards) + "\n"
+        s += "Passed: " + str(self.passed) + "\n"
+        s += "Last Player: " + str(self.last_player) + "\n"
+        return s
 
 
-class ScumController():
-    def init__(self, agents, names=None):
+class ScumController:
+    def __init__(self, agents, names=None):
         """
             Initialize a scum game with agents as the players in the game
         """
@@ -133,9 +106,9 @@ class ScumController():
         """
         default_trade(self.gamestate.hands[self.president], self.gamestate.hands[self.scum])
 
-    def setup_round(self, prev_order):
+    def setup_round(self, prev_order=None):
         """
-            Sets up the players to play a round by resetting gamestate, 
+            Sets up the players to play a round by resetting gamestate,
             dealing cards, simulating trading.
             if prev_order is None, this function will act as if it is the first round.
         """
@@ -147,7 +120,7 @@ class ScumController():
         else:
             self.president = random.randrange(self.n)
             self.scum = None
-        
+
         self.curr_player = self.president
 
         # deal hands starting at the president
@@ -162,8 +135,10 @@ class ScumController():
             Simulates a game with the loaded agents for n_rounds rounds.
         """
         player_results = [[] for _ in range(self.n)]
+        scores = None
         for _ in range(n_rounds):
-            scores = self.round()
+            scores = self.round(scores) # each round's setup depends on the previous round's results
+            print("Scores:", scores)
             for i in range(self.n):
                 player_results[scores[i]].append(i)
         return player_results
@@ -173,14 +148,17 @@ class ScumController():
             Run a single round of play given previous ordering prev_order.
         """
         self.setup_round(prev_order)
-
-        MAX_ITER = 10000# just in case
+        print("Starting round")
+        MAX_ITER = 50 # just in case
         for i in range(MAX_ITER + 1):
             if i == MAX_ITER:
+                print(str(self.gamestate))
                 raise ValueError("ERROR: MAX ITER REACHED. INFINITE LOOP DETECTED.")
-            
+
+            print(f"t {i} ", end="")
             scores = self.turn()
             if scores != None: # only get a return value if the round is over.
+                print(f"Round finishedat turn {i}")
                 return scores
 
 
@@ -204,26 +182,27 @@ class ScumController():
         if all(self.gamestate.passed): # all players have passed, move play to the last_player to lead.
             self.gamestate.passed = [False] * self.n  # reset passed list
             self.incr_player(self.gamestate.last_player)
+            self.gamestate.top_cards = [] # reset top cards
         else: # otherwise, increment player normally
             self.incr_player()
 
     def play(self, action):
-        if isinstance(action, list):
-            if not set(action) <= set(self.gamestate.hands[self.curr_player]): # skip move if the cards aren't in the players hand
+        if isinstance(action, tuple):
+            if not set(action) <= set(self.gamestate.hands[self.curr_player].cards): # skip move if the cards aren't in the players hand
                 raise ValueError(f"Action {action} attempted to play cards not in hand")
                 return "Pass"
-            
+
             if not is_set(action): # skip mvoes that aren't a set
                 raise ValueError(f"Action {action} is not a set")
                 return "Pass"
-            
+
             if self.gamestate.top_cards and action[0].rank() <= self.gamestate.top_cards[0].rank(): # skip move if the rank is not higher than the previous move
                 raise ValueError(f"Action {action} does not beat top cards {self.gamestate.top_cards}")
                 return "Pass"
 
             self.gamestate.top_cards = action # update the top cards
             self.gamestate.last_player = self.curr_player
-            self.gamestate.seen_cards += action # mark the cards as seen
+            self.gamestate.cards_seen += action # mark the cards as seen
             self.gamestate.hands[self.curr_player].remove(action) # remove the cards from that players hand
             if not self.gamestate.hands[self.curr_player]: # is the player's hand now empty...
                 self.gamestate.out.append(self.curr_player)
@@ -231,28 +210,11 @@ class ScumController():
         return "Pass"
 
 
-
-
-
-
-
-        
-
-
-
-
-        
-
-        
-
-    
-
-
-
-
-
 def main():
-    pass
+    agents = [get_random_agent() for _ in range(5)]
+    controller = ScumController(agents)
+    results = controller.game(1)
+    print(results)
 
 if __name__ == "__main__":
     main()

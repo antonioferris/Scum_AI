@@ -21,7 +21,22 @@ def is_set(cards):
     """
         Verifies that a list of cards is a set (all the same rank)
     """
-    return len({card[:-1] for card in cards}) == 1 # take out the suit, and see if all are the same
+    return len({card.name[:-1] for card in cards}) == 1 # take out the suit, and see if all are the same
+
+def all_sets(hand):
+    """
+        Given a hand, returns the tuple of every unique set of cards in the hand
+    """
+    sets = []
+    set = []
+    for card in hand.cards:
+        if set and set[-1].rank() != card.rank():
+            set = [card]
+        else:
+            set.append(card)
+        sets.append(tuple(set))
+    return sets
+
 
 def compute_playable(hand):
     """
@@ -50,17 +65,17 @@ def default_give(president_hand):
         give_rank = min(rank for rank, cnt in c.items() if cnt == 1)
     except ValueError: # if there are no unpaired cards, just return the smallest card
         return president_hand.cards[0]
-        
+
     for card in president_hand.cards:
         if card.rank() == give_rank:
             return card
-    
+
 
 def default_trade(president_hand, scum_hand):
     """
         Baseline implementation of basic auto-trading between president and scum.
     """
-    
+
     # scum gives their highest card
     scum_give = scum_hand.cards[-1]
     president_hand.get(scum_give)
@@ -70,12 +85,12 @@ def default_trade(president_hand, scum_hand):
     pres_give = default_give(president_hand)
     president_hand.remove(pres_give)
     scum_hand.get(pres_give)
-    
+
 
 
 # total ordering lets Cards be sorted without needing every possible comparison function implemented below.
 @total_ordering
-class Card():
+class Card:
     def __init__(self, name):
         """
             Name is a unique identifier for the card.
@@ -95,7 +110,9 @@ class Card():
 
 
     def __eq__(self, other):
-        return self.name == other.name
+        if isinstance(other, Card):
+            return self.name == other.name
+        return False
 
     def __lt__(self, other):
         return CARD_STRS.index(self.name) < CARD_STRS.index(other.name)
@@ -109,7 +126,7 @@ class Card():
     def __repr__(self):
         return self.name
 
-class Hand():
+class Hand:
     def __init__(self):
         self.cards = []
 
@@ -118,8 +135,8 @@ class Hand():
         self.cards.sort()
 
     def remove(self, cards):
-        if not isinstance(cards, list):
-            cards = [cards] # wrap singleton cards to be lists for universality
+        if not isinstance(cards, tuple):
+            cards = (cards,) # wrap singleton cards to be lists for universality
         for card in cards:
             if card not in self.cards:
                 raise ValueError(f"Attempted to remove card {card} from hand {self.cards}")
@@ -129,11 +146,14 @@ class Hand():
     def clear(self):
         self.cards = []
 
+    def __len__(self):
+        return len(self.cards)
+
     def __repr__(self):
         return " ".join(map(str, self.cards))
 
 
-class Deck():
+class Deck:
     def __init__(self):
         """
             Every deck starts as a shuffled list of cards.
@@ -154,6 +174,6 @@ class Deck():
             hand.clear()
         for i in range(len(self.cards)):
             hands[(i + president) % n].get(self.deal()) # deal the card to the next player in a circle.
-        
+
         return hands
-        
+
