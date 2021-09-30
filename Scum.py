@@ -23,6 +23,7 @@ from Cards import Deck, Hand, Card
 from Cards import is_set, compute_playable, default_trade
 from Agents import Agent, AgentView, get_random_agent
 import random
+import time
 
 class GameState:
     def __init__(self, n, names):
@@ -67,11 +68,12 @@ class GameState:
 
 
 class ScumController:
-    def __init__(self, agents, names=None):
+    def __init__(self, agents, names=None, max_iter=1000):
         """
             Initialize a scum game with agents as the players in the game
         """
         self.n = len(agents)
+        self.max_iter = max_iter
         self.agents = agents
         if not names:
             self.names = [str(i) for i in range(self.n)]
@@ -94,8 +96,13 @@ class ScumController:
         else:
             self.curr_player = (self.curr_player + 1) % self.n
 
+        emergency_jump = 0
         while self.curr_player in self.gamestate.out or self.gamestate.passed[self.curr_player]: # skip out / passed players
             self.curr_player = (self.curr_player + 1) % self.n
+            emergency_jump += 1
+            if emergency_jump > 6:
+                print(str(self.gamestate))
+                raise ValueError("Emergency Exit")
 
     def deal_round(self):
         Deck().deal_hands(self.gamestate.hands, self.president)
@@ -138,7 +145,6 @@ class ScumController:
         scores = None
         for _ in range(n_rounds):
             scores = self.round(scores) # each round's setup depends on the previous round's results
-            print("Scores:", scores)
             for i in range(self.n):
                 player_results[scores[i]].append(i)
         return player_results
@@ -148,17 +154,14 @@ class ScumController:
             Run a single round of play given previous ordering prev_order.
         """
         self.setup_round(prev_order)
-        print("Starting round")
-        MAX_ITER = 50 # just in case
-        for i in range(MAX_ITER + 1):
-            if i == MAX_ITER:
+        for i in range(self.max_iter + 1):
+            if i == self.max_iter:
                 print(str(self.gamestate))
-                raise ValueError("ERROR: MAX ITER REACHED. INFINITE LOOP DETECTED.")
+                raise ValueError("Max Iter reached")
+                return [0] * self.n
 
-            print(f"t {i} ", end="")
             scores = self.turn()
             if scores != None: # only get a return value if the round is over.
-                print(f"Round finishedat turn {i}")
                 return scores
 
 
@@ -179,7 +182,7 @@ class ScumController:
                     self.gamestate.out.append(p)
                     return self.gamestate.out # final scores is the order of going out
 
-        if all(self.gamestate.passed): # all players have passed, move play to the last_player to lead.
+        if all(self.gamestate.passed[i] or i in self.gamestate.out for i in range(self.n)): # all players have passed or out, move play to the last_player to lead.
             self.gamestate.passed = [False] * self.n  # reset passed list
             self.incr_player(self.gamestate.last_player)
             self.gamestate.top_cards = [] # reset top cards
@@ -209,12 +212,15 @@ class ScumController:
             return "Not Passed"
         return "Pass"
 
+def test_random_agents(n_agents, n_rounds, max_iter):
+    agents = [get_random_agent() for _ in range(n_agents)]
+    controller = ScumController(agents, max_iter=max_iter)
+    results = controller.game(n_rounds)
+    print(results)
+
 
 def main():
-    agents = [get_random_agent() for _ in range(5)]
-    controller = ScumController(agents)
-    results = controller.game(1)
-    print(results)
+    test_random_agents(5, 1)
 
 if __name__ == "__main__":
     main()

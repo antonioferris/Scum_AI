@@ -1,3 +1,7 @@
+# profiling information
+*.prof_stats
+profiling_stats.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
