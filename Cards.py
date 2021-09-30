@@ -38,7 +38,40 @@ def compute_playable(hand):
         for i in range(cnt):
             r[i] = max(r[i], rank - 1) # the highest we can play at any lower count is 1 less than the rank here
     return r
+
+def default_give(president_hand):
+    """
+        Find the card that the president would give by default
+        (lowest unpaired card)
+    """
+    ranks = [card.rank() for card in president_hand.cards]
+    c = Counter(ranks)
+    try:
+        give_rank = min(rank for rank, cnt in c.items() if cnt == 1)
+    except ValueError: # if there are no unpaired cards, just return the smallest card
+        return president_hand.cards[0]
+        
+    for card in president_hand.cards:
+        if card.rank() == give_rank:
+            return card
     
+
+def default_trade(president_hand, scum_hand):
+    """
+        Baseline implementation of basic auto-trading between president and scum.
+    """
+    
+    # scum gives their highest card
+    scum_give = scum_hand.cards[-1]
+    president_hand.get(scum_give)
+    scum_hand.remove(scum_give)
+
+    # president gives away the lowest unpaired card
+    pres_give = default_give(president_hand)
+    president_hand.remove(pres_give)
+    scum_hand.get(pres_give)
+    
+
 
 # total ordering lets Cards be sorted without needing every possible comparison function implemented below.
 @total_ordering
