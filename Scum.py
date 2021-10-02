@@ -22,6 +22,7 @@
 from Cards import Deck, Hand, Card
 from Cards import is_set, compute_playable, default_trade
 from Agents import Agent, AgentView, get_random_agent
+from collections import Counter
 import random
 import time
 
@@ -53,7 +54,7 @@ class GameState:
         self.last_player = 0
 
     def __repr__(self):
-        return "tst"
+        return str(self)
 
     def __str__(self):
         s = ""
@@ -68,12 +69,11 @@ class GameState:
 
 
 class ScumController:
-    def __init__(self, agents, names=None, max_iter=1000):
+    def __init__(self, agents, names=None):
         """
             Initialize a scum game with agents as the players in the game
         """
         self.n = len(agents)
-        self.max_iter = max_iter
         self.agents = agents
         if not names:
             self.names = [str(i) for i in range(self.n)]
@@ -147,15 +147,19 @@ class ScumController:
             scores = self.round(scores) # each round's setup depends on the previous round's results
             for i in range(self.n):
                 player_results[scores[i]].append(i)
-        return player_results
+
+        # convert player results to a counter
+        nice_results = [Counter(result) for result in player_results]
+        return nice_results
 
     def round(self, prev_order):
         """
             Run a single round of play given previous ordering prev_order.
         """
         self.setup_round(prev_order)
-        for i in range(self.max_iter + 1):
-            if i == self.max_iter:
+        MAX_ITER = 1000
+        for i in range(MAX_ITER + 1):
+            if i == MAX_ITER:
                 print(str(self.gamestate))
                 raise ValueError("Max Iter reached")
                 return [0] * self.n
@@ -212,15 +216,15 @@ class ScumController:
             return "Not Passed"
         return "Pass"
 
-def test_random_agents(n_agents, n_rounds, max_iter):
+def test_random_agents(n_agents, n_rounds):
     agents = [get_random_agent() for _ in range(n_agents)]
-    controller = ScumController(agents, max_iter=max_iter)
+    controller = ScumController(agents)
     results = controller.game(n_rounds)
     print(results)
 
 
 def main():
-    test_random_agents(5, 1)
+    test_random_agents(5, 1000)
 
 if __name__ == "__main__":
     main()

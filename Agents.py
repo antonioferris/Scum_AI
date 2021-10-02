@@ -69,3 +69,15 @@ def random_action(view):
 
 def get_random_agent():
     return Agent(random_action)
+
+def baseline_action(view):
+    """
+        Chooses an action given the view based on a simple rule:
+        Always play when able.
+        Choose the smallest card(s) to play.
+    """
+    actions = action_space(view)
+    minrank = 15
+    maxnum = 0
+    # TODO resume here
+    pass
