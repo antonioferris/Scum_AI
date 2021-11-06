@@ -4,7 +4,7 @@ import Scum
 
 
 def run_script():
-    Scum.test_random_agents(5, 1000)
+    Scum.main()
 
 
 if __name__ == '__main__':
