@@ -74,10 +74,17 @@ def baseline_action(view):
     """
         Chooses an action given the view based on a simple rule:
         Always play when able.
-        Choose the smallest card(s) to play.
+        Choose the most and smallest cards to play.
     """
     actions = action_space(view)
-    minrank = 15
-    maxnum = 0
-    # TODO resume here
-    pass
+    if len(actions) == 1:
+        return actions[0]
+    # maximum number of cards that can be played
+    max_cards = max(actions[1:], key = lambda a : len(a))
+
+    for a in actions[1:]:
+        if len(a) == max_cards:
+            return a
+
+    print("Baseline is choosing randomly")
+    return random.choice(actions)
