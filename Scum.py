@@ -24,41 +24,10 @@ from Cards import Deck, Hand, Card
 from Cards import is_set, compute_playable, default_trade
 from Agents import Agent, AgentView, get_random_agent
 from collections import Counter
+from graphics import draw_graphics, quit_pygame, set_up_graphics
 import random
-import pygame
 import time
 
-
-# Margins
-MARGIN_LEFT = 230
-MARGIN_TOP = 150
-
-# WINDOW SIZE
-WIDTH = 1750
-HEIGHT = 1000
-
-# COLORS
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (38, 150, 37)
-DARK_GREEN = (10, 90, 7)
-RED = (203, 16, 16)
-BLUE = (44, 109, 238)
-
-pygame.init()
-
-# Setting up the screen and background
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-screen.fill(GREEN)
-
-# Setting up caption
-pygame.display.set_caption("Scum")
-
-# Types of fonts to be used
-small_font = pygame.font.Font(None, 32)
-large_font = pygame.font.Font(None, 50)
-
-pygame.display.update()
 
 class GameState:
     def __init__(self, n, names):
@@ -107,7 +76,7 @@ class GameState:
 
 
 class ScumController:
-    def __init__(self, agents, names=None):
+    def __init__(self, agents, names=None, draw=False):
         """
             Initialize a scum game with agents as the players in the game
         """
@@ -121,6 +90,9 @@ class ScumController:
         self.president = random.randrange(self.n)
         self.curr_player = self.president
         self.scum = self.n - 1
+        self.draw = draw
+        if draw:
+            set_up_graphics()
 
     def incr_player(self, next_player=-1):
         """
@@ -133,14 +105,6 @@ class ScumController:
             self.curr_player = next_player
         else:
             self.curr_player = (self.curr_player + 1) % self.n
-
-        # emergency_jump = 0
-        # while self.curr_player in self.gamestate.out or self.gamestate.passed[self.curr_player]: # skip out / passed players
-        #     self.curr_player = (self.curr_player + 1) % self.n
-        #     emergency_jump += 1
-        #     if emergency_jump > 6:
-        #         print(str(self.gamestate))
-        #         raise ValueError("Emergency Exit")
 
     def deal_round(self):
         Deck().deal_hands(self.gamestate.hands, self.president)
@@ -218,7 +182,8 @@ class ScumController:
         if self.play(action) == "Pass":
             self.gamestate.passed[self.curr_player] = True
 
-        self.draw_graphics(round, self.curr_player, action)
+        if self.draw:
+            draw_graphics(round, self.curr_player, action, self.gamestate)
 
         # test for end of game
         if len(self.gamestate.out) >= self.n - 1: # are all but 1 players out?
@@ -233,7 +198,8 @@ class ScumController:
             self.incr_player(self.gamestate.last_player)
             self.gamestate.top_cards = [] # reset top cards
 
-            self.draw_graphics(round, self.curr_player, "WIN")
+            if self.draw:
+                draw_graphics(round, self.curr_player, "WIN", self.gamestate)
             self.gamestate.turn_count += 1
         else: # otherwise, increment player normally
             self.incr_player()
@@ -263,190 +229,10 @@ class ScumController:
         
         return option
 
-    def translate_for_graphics(self, action):
-        res = []
-        for a in action:
-            card = str(a)
-            num = ""
-            suit = ""
-            if card[0] not in ['Q', 'K', 'J', '1', 'A']:
-                num = card[0]
-            elif card[0] == 'Q':
-                num = 'queen'
-            elif card[0] == 'K':
-                num = 'king'
-            elif card[0] == 'J':
-                num = 'jack'
-            else:
-                num = 'ace'
-            
-            if card[1] == 'C':
-                suit = 'clubs'
-            elif card[1] == 'D':
-                suit = 'diamonds'
-            elif card[1] == 'S':
-                suit = 'spades'
-            else:
-                suit = 'hearts'
-            
-            filename = num + "_of_" + suit + ".png"
-            res.append(filename)
-        return res
-
-
-    def draw_graphics(self, round, player, action):
-        pygame.event.get()
-
-        time_sleep = .25
-
-        # Draw other player's indicator
-        pygame.draw.rect(screen, DARK_GREEN, (0,0,WIDTH,350))
-        pygame.draw.line(screen, RED, (0, 350), (WIDTH, 350))
-        pygame.draw.line(screen, BLACK, (0, 351), (WIDTH, 351))
-        pygame.draw.line(screen, BLACK, (0, 352), (WIDTH, 352))
-        pygame.draw.line(screen, BLACK, (0, 353), (WIDTH, 353))
-        pygame.draw.line(screen, RED, (0, 354), (WIDTH, 354))
-
-
-        text = small_font.render("Overview of Players", True, WHITE)
-        text_rect = text.get_rect()
-        text_rect.center = (WIDTH//2, 50)
-        screen.blit(text, text_rect)
-
-        scum = -1
-        if self.gamestate.n - len(self.gamestate.out) == 1:
-            for i in range(self.gamestate.n):
-                if i not in self.gamestate.out:
-                    scum = i
-                    time_sleep = 4
-                    break
-        
-        offset = 0
-        start = WIDTH//2 - 85 * (self.gamestate.n // 2)
-        for i in self.gamestate.play_order:
-            c = pygame.image.load(r'./' + 'avatar.jpg')
-            c = pygame.transform.scale(c , (75,75))
-            screen.blit(c, (start-30+offset, 155))
-
-            num_text = small_font.render(str(i+1), True, BLACK)
-            num_text_rect = num_text.get_rect()
-            num_text_rect.center = (start+10+offset, 185)
-            screen.blit(num_text, num_text_rect)
-
-            play_order_text = small_font.render("Play Order:", True, WHITE)
-            play_order_rect = play_order_text.get_rect()
-            play_order_rect.center = (start-150, 185)
-            screen.blit(play_order_text, play_order_rect)
-
-            rounds_won_text = small_font.render("Rounds Won:", True, WHITE)
-            rounds_won_text_rect = rounds_won_text.get_rect()
-            rounds_won_text_rect.center = (start-150, 250)
-            screen.blit(rounds_won_text, rounds_won_text_rect)
-
-            hands_rem_text = small_font.render("Cards Remaining:", True, WHITE)
-            hands_rem_text_rect = hands_rem_text.get_rect()
-            hands_rem_text_rect.center = (start-150, 300)
-            screen.blit(hands_rem_text, hands_rem_text_rect)
-
-            if i in self.gamestate.out:
-                place = large_font.render(str(self.gamestate.out.index(i)+1), True, BLUE)
-                place_rect = place.get_rect()
-                place_rect.center = (start+10+offset, 135)
-                screen.blit(place, place_rect)
-            elif scum != -1 and i == scum:
-                place = large_font.render(str(len(self.gamestate.out)+1), True, RED)
-                place_rect = place.get_rect()
-                place_rect.center = (start+10+offset, 135)
-                screen.blit(place, place_rect)
-
-            rounds = large_font.render(str(self.gamestate.rounds_won[i]), True, WHITE)
-            rounds_rect = rounds.get_rect()
-            rounds_rect.center = (start+10+offset, 250)
-            screen.blit(rounds, rounds_rect)
-
-            cards = large_font.render(str(len(self.gamestate.hands[i].cards)), True, WHITE)
-            cards_rect = rounds.get_rect()
-            cards_rect.center = (start+10+offset, 300)
-            screen.blit(cards, cards_rect)
-
-            offset+=95
-
-        # Draw the table with cards
-        round_text = small_font.render("Round "+str(round+1), True, BLACK)
-        round_text_rect = round_text.get_rect()
-        round_text_rect.center = (WIDTH//2, HEIGHT//2 - 120)
-        screen.blit(round_text, round_text_rect)
-
-        player_text = small_font.render("Player "+str(player+1), True, BLACK)
-        player_text_rect = player_text.get_rect()
-        player_text_rect.center = (WIDTH//2, HEIGHT//2 - 90)
-        screen.blit(player_text, player_text_rect)
-
-        ac = ""
-        if action == 'Pass':
-            ac = "Passed"
-        elif action == "WIN":
-            ac = "Won this turn"
-            time_sleep = .75
-        else:
-            ac = ' & '.join([str(a) for a in action])
-
-        hand_text = small_font.render("Action: " + ac, True, BLACK)
-        hand_text_rect = hand_text.get_rect()
-        hand_text_rect.center = (WIDTH//2, HEIGHT//2 - 60)
-        screen.blit(hand_text, hand_text_rect)
-
-        turn_text = small_font.render("Turn: " + str(self.gamestate.turn_count), True, BLACK)
-        turn_text_rect = turn_text.get_rect()
-        turn_text_rect.center = (WIDTH//2, HEIGHT//2 - 30)
-        screen.blit(turn_text, turn_text_rect)
-
-        if action == "Pass" or action == "WIN":
-            action = self.gamestate.last_action
-
-        offset = 0
-        if action != "Pass":
-            start = WIDTH//2 - 115 * (len(action) // 2)
-            for file in self.translate_for_graphics(action):
-                c = pygame.image.load(r'./cards/' + file)
-                c = pygame.transform.scale(c , (100,160))
-                screen.blit(c, (start+offset, HEIGHT//2 + 30))
-                offset+=120
-
-        self.gamestate.last_action = action
-
-
-        # Draw Player One's Hand
-        pygame.draw.line(screen, RED, (0, 750), (WIDTH, 750))
-        pygame.draw.line(screen, BLACK, (0, 751), (WIDTH, 751))
-        pygame.draw.line(screen, BLACK, (0, 752), (WIDTH, 752))
-        pygame.draw.line(screen, BLACK, (0, 753), (WIDTH, 753))
-        pygame.draw.line(screen, RED, (0, 754), (WIDTH, 754))
-
-        pygame.draw.rect(screen, DARK_GREEN, (0,754,WIDTH,1000))
-
-        player_one_text = small_font.render("Player One's Hand: ", True, WHITE)
-        player_one_rect = player_one_text.get_rect()
-        player_one_rect.center = (WIDTH//2, HEIGHT//2 + 300)
-        screen.blit(player_one_text, player_one_rect)
-
-        offset = 0
-        start = WIDTH//2 - 75 * (len(self.gamestate.hands[0].cards) // 2)
-        for file in self.translate_for_graphics(self.gamestate.hands[0].cards):
-            c = pygame.image.load(r'./cards/' + file)
-            c = pygame.transform.scale(c , (70,112))
-            screen.blit(c, (start+offset, HEIGHT//2 + 350))
-            offset+=80
-
-
-        if player not in self.gamestate.out or scum != -1:
-            pygame.display.update()
-            time.sleep(time_sleep)
-        screen.fill(GREEN)
 
 def test_random_agents(n_agents, n_rounds):
     agents = [get_random_agent() for _ in range(n_agents)]
-    controller = ScumController(agents)
+    controller = ScumController(agents, draw=False)
     results = controller.game(n_rounds)
     print(results)
 
@@ -456,4 +242,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    pygame.quit()
+    quit_pygame()
