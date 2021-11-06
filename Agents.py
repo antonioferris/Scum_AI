@@ -6,6 +6,7 @@
 from Cards import Deck, Hand, Card
 from Cards import all_sets, compute_playable
 import random
+from collections import Counter
 
 class AgentView:
     def __init__(self, gamestate, i):
@@ -19,6 +20,12 @@ class AgentView:
         self.top_cards = gamestate.top_cards
         self.passed = gamestate.passed
         self.last_player = gamestate.last_player
+
+    def __str__(self):
+        s = "Agent View:\n"
+        s += "Top Cards: " + str(self.top_cards) + "\n"
+        s += "Hand: " + str(self.hand.cards)
+        return s
 
 class Agent:
     def __init__(self, action_function):
@@ -45,6 +52,9 @@ class Agent:
         if self.auto_passer(view.top_cards, view.hand):
             return "Pass" # pass turn if no playable cards
         action = self.action_function(view)
+
+        if isinstance(action, int):
+            action = int_to_action(action, view)
         if isinstance(action, Card):
             action = (action,)
         return action
@@ -64,6 +74,45 @@ def action_space(view):
                 poss_actions.append(action)
     return poss_actions
 
+def int_action_space(view):
+    """
+        Given an agentview, returns a list of all valid actions
+        given the state of that gameas integers
+    """
+    poss_actions = {0}
+    if not view.top_cards:
+        for card in view.hand.cards:
+            poss_actions.add(card.rank() - 1)
+    else:
+        ranks = Counter([card.rank() for card in view.hand.cards])
+        for rank, cnt in ranks.items():
+            if cnt >= len(view.top_cards) and rank > view.top_cards[0].rank():
+                poss_actions.add(rank - 1)
+
+    poss_actions = sorted(list(poss_actions))
+    return poss_actions
+
+def int_to_action(a, view):
+    if a == 0:
+        return "Pass"
+
+    ranks = Counter([card.rank() for card in view.hand.cards])
+    if not view.top_cards:
+        n = ranks[a + 1]
+    else:
+        n = len(view.top_cards)
+
+    action = []
+    for card in view.hand.cards:
+        if card.rank() == a + 1:
+            action.append(card)
+            if len(action) == n:
+                action = tuple(action)
+                break
+
+    return action
+
+
 def random_action(view):
     return random.choice(action_space(view))
 
@@ -76,7 +125,10 @@ def baseline_action(view):
         Always play when able.
         Choose the smallest card to play.
     """
-    actions = action_space(view)
+    actions = int_action_space(view)
+    print(view)
+    print(f"Actions: {actions}")
+    print()
     if len(actions) > 1:
         return actions[1]
     return actions[0]
