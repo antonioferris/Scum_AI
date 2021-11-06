@@ -30,8 +30,6 @@ def set_up_graphics():
     global screen
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     screen.fill(GREEN)
-    
-    print(screen)
 
     # Setting up caption
     pygame.display.set_caption("Scum")
@@ -67,14 +65,28 @@ def translate_for_graphics(action):
         res.append(filename)
     return res
 
+def get_speed(tick_speed):
+    time_sleep = []
+    if tick_speed == 1:
+        time_sleep = [1, 2, 6]
+    elif tick_speed == 2:
+        time_sleep = [.5, 1, 5]
+    elif tick_speed == 3:
+        time_sleep = [.25, .75, 4]
+    elif tick_speed == 4:
+        time_sleep = [.15, .5, 2]
+    elif tick_speed == 5:
+        time_sleep = [.05, .125, 2]
 
+    return time_sleep
+        
 def draw_graphics(round, player, action, gamestate):
     global screen
     pygame.event.get()
 
-    time_sleep = .25
+    time_arr = get_speed(gamestate.tick_speed)
+    time_sleep = time_arr[0]
 
-    print(screen)
     # Draw other player's indicator
     pygame.draw.rect(screen, DARK_GREEN, (0,0,WIDTH,350))
     pygame.draw.line(screen, RED, (0, 350), (WIDTH, 350))
@@ -94,7 +106,7 @@ def draw_graphics(round, player, action, gamestate):
         for i in range(gamestate.n):
             if i not in gamestate.out:
                 scum = i
-                time_sleep = 4
+                time_sleep = time_arr[2]
                 break
     
     offset = 0
@@ -163,7 +175,7 @@ def draw_graphics(round, player, action, gamestate):
         ac = "Passed"
     elif action == "WIN":
         ac = "Won this turn"
-        time_sleep = .75
+        time_sleep = time_arr[1]
     else:
         ac = ' & '.join([str(a) for a in action])
 
@@ -219,7 +231,6 @@ def draw_graphics(round, player, action, gamestate):
         pygame.display.update()
         time.sleep(time_sleep)
     screen.fill(GREEN)
-
 
 def quit_pygame():
     pygame.quit()
