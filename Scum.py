@@ -35,7 +35,7 @@ class GameState:
         self.names = names
         self.n = n
         self.hands = [Hand() for _ in range(n)] # list of Hand objects for the players (a Hand is just a list of cards, see Cards.py)
-        self.out = [] # ordered list of palyers who are out, with the first player out first in the list
+        self.out = [] # ordered list of players who are out, with the first player out first in the list
         self.cards_seen = [] # optional parameter for us to use, this is a list of all cards played.
         self.top_cards = [] # the most recently played card(s)
         self.passed = [False] * self.n # list of booleans, True if the player has passed on the current round
