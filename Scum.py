@@ -1,17 +1,23 @@
 from ScumController import ScumController
-from Agents import get_random_agent, Agent, baseline_action
+from Agents import get_random_agent, Agent, baseline_action, heuristic_action
 from graphics import quit_pygame
 import sys
+from State import test_state
 
 def test_random_agents(n_agents, n_rounds, draw, tick_speed):
-    agents = [Agent(baseline_action)] + [get_random_agent() for _ in range(n_agents-1)]
+    agents = [Agent(heuristic_action)] + [get_random_agent() for _ in range(n_agents-1)]
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
     results = controller.game(n_rounds)
-    print(results)
+    display_results(results)
+
+def display_results(results):
+    for p in range(len(results)):
+        print(f"Player {p}: {results[p][0]} Wins")
 
 
 def main(draw, tick_speed):
-    test_random_agents(6, 3, draw, tick_speed)
+    test_state()
+    test_random_agents(7, 20, draw, tick_speed)
 
 # to run with graphics and control tick speed, call "python Scum.py -d <a number from 1 - 5>"
 if __name__ == "__main__":
