@@ -71,6 +71,9 @@ def int_state(view):
     return s
 
 def state_int(s):
+    """
+        Converts an integer back into a (lossy) version of the state
+    """
     hand = []
     top_cards = []
 
@@ -115,8 +118,6 @@ def test_state():
             tc1 = [c.rank() for c in top_cards]
 
             if sorted(h1) != sorted(h2):
-                print(top_cards)
-                print(h)
                 raise ValueError(f"State conversion failed, state encoded hand {h2} instead of {h1}")
             if sorted(tc1) != sorted(tc2):
                 raise ValueError(f"State conversion failed, state encoded top cards {tc2} instead of {tc1}")

@@ -32,7 +32,7 @@ import time
 
 
 class GameState:
-    def __init__(self, n, names):
+    def __init__(self, n, names, tick_speed):
         """
             Initialize with n, the number of players,
             and names, the names of the player in order.
@@ -49,6 +49,7 @@ class GameState:
         self.turn_count = 1
         self.rounds_won = [0 for _ in range(n)]
         self.play_order = [i for i in range(n)]
+        self.tick_speed = tick_speed
 
     def reset(self):
         """
@@ -88,7 +89,7 @@ class ScumController:
             self.names = [str(i) for i in range(self.n)]
         else:
             self.names = names
-        self.gamestate = GameState(self.n, self.names)
+        self.gamestate = GameState(self.n, self.names, tick_speed)
         self.president = random.randrange(self.n)
         self.curr_player = self.president
         self.scum = self.n - 1

@@ -1,14 +1,13 @@
 from ScumController import ScumController
-from Agents import get_random_agent, Agent, baseline_action, heuristic_action
+from Agents import get_random_agent, get_baseline_agent, Agent, heuristic_action
 from graphics import quit_pygame
 import sys
 from State import test_state
 
-def test_random_agents(n_agents, n_rounds, draw, tick_speed):
-    agents = [Agent(heuristic_action)] + [get_random_agent() for _ in range(n_agents-1)]
+def test_agent_against(agent, opponent_func, n_rounds, n_agents=7, draw=False, tick_speed=3):
+    agents = [agent] + [opponent_func() for _ in range(n_agents-1)]
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
     results = controller.game(n_rounds)
-    display_results(results)
 
 def display_results(results):
     for p in range(len(results)):
@@ -17,7 +16,12 @@ def display_results(results):
 
 def main(draw, tick_speed):
     test_state()
-    test_random_agents(7, 20, draw, tick_speed)
+    a = Agent(heuristic_action)
+    n_rounds = 100
+    r1 = test_agent_against(a, get_random_agent, n_rounds, 7, False, tick_speed)
+    r2 = test_agent_against(a, get_baseline_agent, n_rounds, False, tick_speed)
+    print(f"Against random opponents, heuristic agent won {r1[0][0]} / {n_rounds} rounds")
+    print(f"Against baseline opponents, heuristic agent won {r2[0][0]} / {n_rounds} rounds")
 
 # to run with graphics and control tick speed, call "python Scum.py -d <a number from 1 - 5>"
 if __name__ == "__main__":

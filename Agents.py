@@ -63,6 +63,9 @@ def random_action(view):
 def get_random_agent():
     return Agent(random_action)
 
+def get_baseline_agent():
+    return Agent(baseline_action)
+
 def baseline_action(view):
     """
         Chooses an action given the view based on a simple rule:
