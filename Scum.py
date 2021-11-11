@@ -1,33 +1,44 @@
 from ScumController import ScumController
-from Agents import get_random_agent, get_baseline_agent, Agent, heuristic_action, q_learn_action
+from Agents import getter, Agent, DataCollectingAgent
+import Agents
 from graphics import quit_pygame
 import sys
 from State import test_state
+import pickle
 
 def test_agent_against(agent, opponent_func, n_rounds, n_agents=7, draw=False, tick_speed=3):
     agents = [agent] + [opponent_func() for _ in range(n_agents-1)]
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
     results = controller.game(n_rounds)
-    return results
+    return interpret_results(results, display=False)
 
-def display_results(results):
-    for p in range(len(results)):
-        print(f"Player {p}: {results[p][0]} Wins")
+def interpret_results(results, display=True):
+    n_rounds = sum(cnt for _, cnt in results[0].items())
+    avg_placement = sum(placement * cnt for placement, cnt in results[0].items()) / n_rounds
+
+    return avg_placement, results[0][0] / n_rounds
+
+def test_agent(agent, agentname, n_rounds, draw, tick_speed):
+    ap1, wr1 = test_agent_against(agent, getter(Agents.random_action), n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    ap2, wr2 = test_agent_against(agent, getter(Agents.baseline_action), n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    print(f"Against random opponents, Agent {agentname} had placement {ap1} and winrate {wr1}")
+    print(f"Against baseline opponents, Agent {agentname} had placement {ap2} and winrate {wr2}")
 
 
 def main(draw, tick_speed):
     test_state()
-    a = Agent(q_learn_action)
-    b = Agent(heuristic_action)
+    a = Agent(Agents.q_learn_action)
+    b = Agent(Agents.heuristic_action)
     n_rounds = 100
-    r1 = test_agent_against(b, get_random_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    r2 = test_agent_against(b, get_baseline_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    r3 = test_agent_against(a, get_random_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    r4 = test_agent_against(a, get_baseline_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    print(f"Against random opponents, heuristic agent won {r1[0][0]} / {n_rounds} rounds")
-    print(f"Against baseline opponents, heuristic agent won {r2[0][0]} / {n_rounds} rounds")
-    print(f"Against random opponents, QLearning agent won {r3[0][0]} / {n_rounds} rounds")
-    print(f"Against baseline opponents, QLearning agent won {r4[0][0]} / {n_rounds} rounds")
+    # test_agent(a, "Q Learning", n_rounds, draw, tick_speed)
+    # test_agent(b, "Heuristic", n_rounds, draw, tick_speed)
+
+    agents = [DataCollectingAgent(Agents.baseline_action) for _ in range(7)]
+    controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
+    controller.game(n_rounds)
+
+    with open("data/baseline_7.pckl", "wb") as f:
+        pickle.dump(controller.collected_data, f)
 
 # to run with graphics and control tick speed, call "python Scum.py -d <a number from 1 - 5>"
 if __name__ == "__main__":

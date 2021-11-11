@@ -42,6 +42,43 @@ class Agent:
             action = (action,)
         return action
 
+class DataCollectingAgent(Agent):
+    def __init__(self, action_function):
+        self.action_function = action_function
+        self.data = []
+        self.round_data = []
+        self.reward = lambda placement : (4.5 - placement) / 3.5 # map reward to 0-1 range
+
+    def get_action(self, view):
+        """
+            Same as Agent's get_action, but accumulates data
+        """
+        if self.auto_passer(view.top_cards, view.hand):
+            return "Pass" # pass turn if no playable cards
+        action = self.action_function(view)
+
+        datum = (int_state(view), action) # store data for the future
+        self.round_data.append(datum)
+
+        if isinstance(action, int):
+            action = int_to_action(action, view)
+        if isinstance(action, Card):
+            action = (action,)
+        return action
+
+    def finish_round(self, placement):
+        """
+            backprops the rewards for the round
+            and adds the data to self.data
+        """
+        r = self.reward(placement)
+        for i in range(len(self.round_data) - 1):
+            s, a = self.round_data[i]
+            sp = self.round_data[i + 1][0]
+            self.data.append((s, a, r, sp))
+
+
+
 def action_space(view):
     """
         Given an agentview, returns a list of all valid actions
@@ -61,14 +98,11 @@ def action_space(view):
 def random_action(view):
     return random.choice(action_space(view))
 
-def get_random_agent():
-    return Agent(random_action)
+def getter(f):
+    return lambda : Agent(f)
 
-def get_baseline_agent():
-    return Agent(baseline_action)
-
-def get_qlearn_agent():
-    return Agent(q_learn_action)
+def data_getter(f):
+    return lambda : DataCollectingAgent(f)
 
 def baseline_action(view):
     """

@@ -23,7 +23,7 @@
 from os.path import exists
 from Cards import Deck, Hand, Card
 from Cards import is_set, compute_playable, default_trade
-from Agents import Agent
+from Agents import Agent, DataCollectingAgent
 from State import AgentView
 from collections import Counter
 from graphics import draw_graphics, quit_pygame, set_up_graphics
@@ -94,6 +94,7 @@ class ScumController:
         self.curr_player = self.president
         self.scum = self.n - 1
         self.draw = draw
+        self.collected_data = []
         if draw:
             set_up_graphics()
 
@@ -158,6 +159,12 @@ class ScumController:
 
         # convert player results to a counter
         nice_results = [Counter(result) for result in player_results]
+
+        # save data if any was collected
+        for agent in self.agents:
+            if isinstance(agent, DataCollectingAgent):
+                self.collected_data += agent.data
+
         return nice_results
 
     def round(self, prev_order, round):
@@ -174,6 +181,11 @@ class ScumController:
 
             scores = self.turn(round)
             if scores != None: # only get a return value if the round is over.
+                # allow the data collecting agents to collect their data
+                for i in range(len(self.agents)):
+                    agent = self.agents[i]
+                    if isinstance(agent, DataCollectingAgent):
+                        agent.finish_round(scores.index(i))
                 return scores
 
     def turn(self, round):
