@@ -47,7 +47,7 @@ class DataCollectingAgent(Agent):
         self.action_function = action_function
         self.data = []
         self.round_data = []
-        self.reward = lambda placement : (4.5 - placement) / 3.5 # map reward to 0-1 range
+        self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to 0-1 range
 
     def get_action(self, view):
         """
@@ -76,6 +76,8 @@ class DataCollectingAgent(Agent):
             s, a = self.round_data[i]
             sp = self.round_data[i + 1][0]
             self.data.append((s, a, r, sp))
+
+        self.round_data = []
 
 
 
@@ -116,8 +118,13 @@ def baseline_action(view):
     return actions[0]
 
 def heuristic_action(view):
+    """
+        Chooses an action given the view based on heuristic:
+        Keep a high card
+    """
     actions = int_action_space(view)
     s = int_state(view)
+
     if len(actions) == 1:
         return actions[0]
     if not view.top_cards:
@@ -125,10 +132,10 @@ def heuristic_action(view):
 
     r = actions[1] + 1
     score = 0
-    for c in view.hand.cards:
-        if c.rank() < r:
+    for card_rank in {card.rank() for card in view.hand.cards}: # for each unique rank in hand
+        if card_rank < r:
             score -= 1
-        elif c.rank() > r:
+        elif card_rank > r:
             score += 1
 
     if score >= 0:

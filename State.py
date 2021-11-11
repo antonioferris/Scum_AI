@@ -8,6 +8,17 @@
 import random
 from Cards import CARD_STRS, Deck, Hand, Card
 from collections import Counter
+from itertools import combinations_with_replacement
+
+num_hand = {0 : ()}
+acc = 1
+for i in range(1, 6):
+    # add all combinations of i-card hands to num_hand
+    tuples = list(enumerate(combinations_with_replacement(range(2, 15), i)))
+    num_hand.update({n + acc : hand for n, hand in tuples})
+    acc += len(tuples) # acc accumulate the sizes of the smaller dictionaries
+
+hand_num = {v : k  for k, v in num_hand.items()}
 
 
 class AgentView:
@@ -51,7 +62,7 @@ def int_state(view):
         Cards are encoded such that 1-13 represent the 13 ranks, and 0 represents
         the card not existing
     """
-    ranks = sorted([card.rank() - 1 for card in view.hand.cards])
+    ranks = sorted([card.rank() for card in view.hand.cards])
     ranks = ranks[-5:] # only get the first 5 cards
 
     s = 0
@@ -59,14 +70,7 @@ def int_state(view):
         s += view.top_cards[0].rank() - 1
         s += 14 * (len(view.top_cards) - 1) # encode the number of cards in the middle
 
-    # s = 0 here corresponds to empty top cards
-    if s >= 14 * 4:
-        print(view)
-        raise ValueError(f"State {s} too large in encoding")
-    m = 14 * 4
-    for d in ranks:
-        s += d * m
-        m *= 14
+    s += 14 * 4 * hand_num[tuple(ranks)]
 
     return s
 
@@ -85,14 +89,12 @@ def state_int(s):
         s = s // 4
         for _ in range(top_card_count + 1):
             top_cards.append(top_card_rank + 1)
+    else:
+        s = s // 56
 
-    for _ in range(5):
-        if s == 0:
-            break
-        r = s % 14
-        if r != 0:
-            hand.append(r + 1)
-        s = s // 14
+    hand = list(num_hand[s])
+
+
 
     return (hand, top_cards)
 

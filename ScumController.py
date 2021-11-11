@@ -113,11 +113,21 @@ class ScumController:
     def deal_round(self):
         Deck().deal_hands(self.gamestate.hands, self.president)
 
-    def trade(self):
+    def trade(self, prev_order):
         """
             Initiate trading. For now, this trading is just done automatically.
         """
-        default_trade(self.gamestate.hands[self.president], self.gamestate.hands[self.scum])
+        # the president takes the 3 highest cards away from the scum
+        default_trade(self.gamestate.hands[prev_order[0]], self.gamestate.hands[prev_order[-1]])
+        default_trade(self.gamestate.hands[prev_order[0]], self.gamestate.hands[prev_order[-1]])
+        default_trade(self.gamestate.hands[prev_order[0]], self.gamestate.hands[prev_order[-1]])
+
+        # 2nd and 2nd to last trade 2 times
+        default_trade(self.gamestate.hands[prev_order[1]], self.gamestate.hands[prev_order[-2]])
+        default_trade(self.gamestate.hands[prev_order[1]], self.gamestate.hands[prev_order[-2]])
+
+        # 3rd and 3rd to last trade once
+        default_trade(self.gamestate.hands[prev_order[2]], self.gamestate.hands[prev_order[-3]])
 
     def setup_round(self, prev_order=None):
         """
@@ -141,7 +151,7 @@ class ScumController:
 
         # if we have a scum (not first round) initiate trading
         if self.scum != None:
-            self.trade()
+            self.trade(prev_order)
 
     def game(self, n_rounds):
         """
