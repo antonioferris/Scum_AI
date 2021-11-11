@@ -1,5 +1,5 @@
 from ScumController import ScumController
-from Agents import get_random_agent, get_baseline_agent, Agent, heuristic_action
+from Agents import get_random_agent, get_baseline_agent, Agent, heuristic_action, q_learn_action
 from graphics import quit_pygame
 import sys
 from State import test_state
@@ -17,12 +17,17 @@ def display_results(results):
 
 def main(draw, tick_speed):
     test_state()
-    a = Agent(heuristic_action)
+    a = Agent(q_learn_action)
+    b = Agent(heuristic_action)
     n_rounds = 100
-    r1 = test_agent_against(a, get_random_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    r2 = test_agent_against(a, get_baseline_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    r1 = test_agent_against(b, get_random_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    r2 = test_agent_against(b, get_baseline_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    r3 = test_agent_against(a, get_random_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    r4 = test_agent_against(a, get_baseline_agent, n_rounds, 7, draw=draw, tick_speed=tick_speed)
     print(f"Against random opponents, heuristic agent won {r1[0][0]} / {n_rounds} rounds")
     print(f"Against baseline opponents, heuristic agent won {r2[0][0]} / {n_rounds} rounds")
+    print(f"Against random opponents, QLearning agent won {r3[0][0]} / {n_rounds} rounds")
+    print(f"Against baseline opponents, QLearning agent won {r4[0][0]} / {n_rounds} rounds")
 
 # to run with graphics and control tick speed, call "python Scum.py -d <a number from 1 - 5>"
 if __name__ == "__main__":

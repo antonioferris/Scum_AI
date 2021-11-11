@@ -6,6 +6,7 @@
 from State import AgentView, int_state, int_action_space, int_to_action
 from Cards import Deck, Hand, Card
 from Cards import all_sets, compute_playable
+from q_learn import QLearning
 import random
 from collections import Counter
 
@@ -66,6 +67,9 @@ def get_random_agent():
 def get_baseline_agent():
     return Agent(baseline_action)
 
+def get_qlearn_agent():
+    return Agent(q_learn_action)
+
 def baseline_action(view):
     """
         Chooses an action given the view based on a simple rule:
@@ -96,3 +100,11 @@ def heuristic_action(view):
     if score >= 0:
         return actions[1]
     return actions[0]
+
+def q_learn_action(view):
+    actions = int_action_space(view)
+    s = int_state(view)
+    learner = QLearning(actions, s, view)
+    learner.q_learn()
+    a = learner.optimal_policy()
+    return int_to_action(a, view)
