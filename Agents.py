@@ -143,6 +143,9 @@ def heuristic_action(view):
     return actions[0]
 
 def q_learn_action(view):
+    if len(view.hand.cards) >= 5:
+        return baseline_action(view)
+
     actions = int_action_space(view)
     s = int_state(view)
     learner = QLearning(actions, s, view)

@@ -1,6 +1,8 @@
 from random import randint
 import numpy as np
+import pickle
 from State import SimpleView, int_state, int_action_space, int_to_action
+from os.path import exists
 
 
 class QLearning():
@@ -9,11 +11,7 @@ class QLearning():
         self.view = view
         self.curr_state = state
         self.actions = actions
-        self.a_sp_pairs = self.generate_iter_pairs()
-        max_sp = 0
-        if len(self.a_sp_pairs) > 0:
-            max_sp = max([arr[1] for arr in self.a_sp_pairs])
-        self.Q = np.zeros((max(state, max_sp)+1, 14))
+        self.Q = np.zeros((500000, 14))
 
     def generate_iter_pairs(self):
         pairs = []
@@ -30,18 +28,21 @@ class QLearning():
         return pairs
 
     def q_learn(self):
-        for (action, state_prime) in self.a_sp_pairs:
-            reward = randint(10, 500)
+        if not exists("data\baseline_q.p"):
+            with open("data/baseline_7.p", "rb") as f:
+                data = pickle.load(f)
 
-            temp_actions = self.actions
-            temp_actions.remove(action)
-            if len(temp_actions) == 0:
-                reward = 1000
+            for state, action, reward, state_prime in data:
+                if action in self.actions:
+                    self.Q[state, action] = self.Q[state, action] + 0.1*(reward + 0.95 * self.Q[state_prime, action] - self.Q[state, action])
 
-            self.Q[self.curr_state, action - 1] = self.Q[self.curr_state, action - 1] + 0.1*(reward + 0.95 * self.Q[state_prime, action - 1] - self.Q[self.curr_state, action - 1])
+            pickle.dump(self.Q, open("data/baseline_q.p", "wb"))
+        else:
+            self.Q = pickle.load(open("data/baseline_q.p", "rb"))
 
     def optimal_policy(self):
         if not np.any(self.Q[self.curr_state]):
             return np.random.choice(self.actions)
         else:
-            return np.argmax(self.Q[self.curr_state]) + 1
+            val = np.argmax(self.Q[self.curr_state])
+            return val
