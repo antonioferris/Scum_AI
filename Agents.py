@@ -48,6 +48,7 @@ class DataCollectingAgent(Agent):
         self.data = []
         self.round_data = []
         self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to 0-1 range
+        self.gamma = 0.95
 
     def get_action(self, view):
         """
@@ -72,10 +73,12 @@ class DataCollectingAgent(Agent):
             and adds the data to self.data
         """
         r = self.reward(placement)
-        for i in range(len(self.round_data) - 1):
+        discount = 1
+        for i in range(len(self.round_data) - 2, -1, -1):
             s, a = self.round_data[i]
             sp = self.round_data[i + 1][0]
-            self.data.append((s, a, r, sp))
+            self.data.append((s, a, r * discount, sp))
+            discount *= self.gamma
 
         self.round_data = []
 
@@ -151,4 +154,12 @@ def q_learn_action(view):
     learner = QLearning(actions, s, view)
     learner.q_learn()
     a = learner.optimal_policy()
+
+    if a != baseline_action(view):
+        print(view)
+        print(actions)
+        print(learner.Q[self.curr_state])
+        print()
+
+
     return int_to_action(a, view)
