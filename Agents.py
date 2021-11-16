@@ -72,7 +72,9 @@ class DataCollectingAgent(Agent):
             backprops the rewards for the round
             and adds the data to self.data
         """
-        r = self.reward(placement)
+        if not self.round_data:
+            return
+        r = self.reward(placement) * 10 / len(self.round_data)
         discount = 1
         for i in range(len(self.round_data) - 2, -1, -1):
             s, a = self.round_data[i]
