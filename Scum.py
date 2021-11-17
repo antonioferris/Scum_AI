@@ -31,11 +31,13 @@ def generate_data(n_rounds, draw, tick_speed):
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
     controller.game(n_rounds)
 
-    with open("data/baseline_7_100.p", "wb") as f:
+    data_path = "data/baseline_100000_01reward.p"
+
+    with open(data_path, "wb") as f:
         pickle.dump(controller.collected_data, f)
 
     # for testing data pickling
-    with open("data/baseline_7_100.p", "rb") as f:
+    with open(data_path, "rb") as f:
         data = pickle.load(f)
 
     subset = random.choices(data, k=20)
@@ -50,7 +52,7 @@ def main(draw, tick_speed):
     n_rounds = 2
     # test_agent(a, "Q Learning", n_rounds, draw, tick_speed)
     # test_agent(b, "Heuristic", n_rounds, draw, tick_speed)
-    generate_data(100, draw, tick_speed)
+    generate_data(100000, draw, tick_speed)
 
 
 

@@ -48,7 +48,6 @@ class DataCollectingAgent(Agent):
         self.data = []
         self.round_data = []
         self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to 0-1 range
-        self.gamma = 0.95
 
     def get_action(self, view):
         """
@@ -74,16 +73,16 @@ class DataCollectingAgent(Agent):
         """
         if not self.round_data:
             return
-        r = self.reward(placement) * 10 / len(self.round_data)
-        discount = 1
-        for i in range(len(self.round_data) - 2, -1, -1):
+        for i in range(len(self.round_data) - 1):
             s, a = self.round_data[i]
             sp = self.round_data[i + 1][0]
-            self.data.append((s, a, r * discount, sp))
-            discount *= self.gamma
+            r = 0
+            if i == len(self.round_data) - 2:
+                r = self.reward(placement)
+
+            self.data.append((s, a, r, sp))
 
         self.round_data = []
-
 
 
 def action_space(view):
