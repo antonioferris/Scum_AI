@@ -47,7 +47,11 @@ class DataCollectingAgent(Agent):
         self.action_function = action_function
         self.data = []
         self.round_data = []
-        self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to 0-1 range
+        self.reward = lambda placement : (7 - placement) / 7 # map reward to 0-1 range
+        self.gamma = 0.95
+        self.QAgent = None
+        if action_function == q_learn_action:
+            self.QAgent = QAgent(action_function)
 
     def get_action(self, view):
         """
@@ -55,7 +59,10 @@ class DataCollectingAgent(Agent):
         """
         if self.auto_passer(view.top_cards, view.hand):
             return "Pass" # pass turn if no playable cards
-        action = self.action_function(view)
+        if self.QAgent:
+            action = self.action_function(view, self.QAgent.learner)
+        else:
+            action = self.action_function(view)
 
         datum = (int_state(view), action) # store data for the future
         self.round_data.append(datum)
@@ -64,6 +71,7 @@ class DataCollectingAgent(Agent):
             action = int_to_action(action, view)
         if isinstance(action, Card):
             action = (action,)
+
         return action
 
     def finish_round(self, placement):
@@ -75,6 +83,10 @@ class DataCollectingAgent(Agent):
             return
         for i in range(len(self.round_data) - 1):
             s, a = self.round_data[i]
+
+            if a == 0:
+                r = -5
+
             sp = self.round_data[i + 1][0]
             r = 0
             if i == len(self.round_data) - 2:
@@ -83,6 +95,23 @@ class DataCollectingAgent(Agent):
             self.data.append((s, a, r, sp))
 
         self.round_data = []
+
+class QAgent(Agent):
+    def __init__(self, action_function):
+        self.action_function = action_function
+        self.learner = QLearning()
+        self.learner.q_learn()
+
+    def get_action(self, view):
+        if self.auto_passer(view.top_cards, view.hand):
+            return "Pass" # pass turn if no playable cards
+        action = self.action_function(view, self.learner)
+
+        if isinstance(action, int):
+            action = int_to_action(action, view)
+        if isinstance(action, Card):
+            action = (action,)
+        return action
 
 
 def action_space(view):
@@ -146,21 +175,17 @@ def heuristic_action(view):
         return actions[1]
     return actions[0]
 
-def q_learn_action(view):
-    if len(view.hand.cards) >= 5:
+def q_learn_action(view, learner):
+    if len(view.hand.cards) >= 4:
         return baseline_action(view)
 
-    actions = int_action_space(view)
     s = int_state(view)
-    learner = QLearning(actions, s, view)
-    learner.q_learn()
-    a = learner.optimal_policy()
+    a = learner.optimal_policy(s, int_action_space(view))
 
-    if a != baseline_action(view):
-        print(view)
-        print(actions)
-        print(learner.Q[self.curr_state])
-        print()
+    # if a == baseline_action(view):
+    #     print(view)
+    #     print(int_action_space(view))
+    #     print(learner.Q[s])
+    #     print()
 
-
-    return int_to_action(a, view)
+    return a
