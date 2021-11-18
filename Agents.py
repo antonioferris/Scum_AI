@@ -3,6 +3,7 @@
     and the AgentView objects which captures the available information
     given to an agent to make each decision.
 """
+from os import PathLike
 from State import AgentView, int_state, int_action_space, int_to_action
 from Cards import Deck, Hand, Card
 from Cards import all_sets, compute_playable
@@ -43,15 +44,16 @@ class Agent:
         return action
 
 class DataCollectingAgent(Agent):
-    def __init__(self, action_function):
+    def __init__(self, action_function, reward_function=0):
         self.action_function = action_function
+        self.reward_function = reward_function
         self.data = []
         self.round_data = []
-        self.reward = lambda placement : (7 - placement) / 7 # map reward to 0-1 range
         self.gamma = 0.95
         self.QAgent = None
         if action_function == q_learn_action:
-            self.QAgent = QAgent(action_function)
+            self.QAgent = QAgent()
+        self.prev_placement = None
 
     def get_action(self, view):
         """
@@ -81,25 +83,52 @@ class DataCollectingAgent(Agent):
         """
         if not self.round_data:
             return
-        r = self.reward(placement) * 10 / len(self.round_data)
+        r = 0
+        if self.reward_function == 0:
+            r = self.zero_one_reward(placement)
+        elif self.reward_function == 1:
+            r = self.backprop_reward(placement)
+        else:
+            r = self.relative_reward(placement)
+
         discount = 1
         for i in range(len(self.round_data) - 2, -1, -1):
             s, a = self.round_data[i]
 
-            if a == 0:
-                r = -5
-                
             sp = self.round_data[i + 1][0]
             self.data.append((s, a, r * discount, sp))
             discount *= self.gamma
 
         self.round_data = []
+        self.prev_placement = placement
+
+    def zero_one_reward(self, placement):
+        r = 0
+        if placement == 0:
+            r = 100
+        return r
+
+    def backprop_reward(self, placement):
+        place = (3.5 - placement) / 3.5
+        r = place * 10 / len(self.round_data)
+        return r
+
+    def relative_reward(self, placement):
+        r = 0
+        if self.prev_placement:
+            if placement > self.prev_placement:
+                r = 100
+            elif placement < self.prev_placement:
+                r = -100
+            elif placement == self.prev_placement and placement == 0:
+                r = 100
+        return r
 
 
 class QAgent(Agent):
-    def __init__(self, action_function):
-        self.action_function = action_function
-        self.learner = QLearning()
+    def __init__(self):
+        self.action_function = q_learn_action
+        self.learner = QLearning("data/baseline_relative_100000.p")
         self.learner.q_learn()
 
     def get_action(self, view):
@@ -176,7 +205,7 @@ def heuristic_action(view):
     return actions[0]
 
 def q_learn_action(view, learner):
-    if len(view.hand.cards) >= 4:
+    if len(view.hand.cards) >= 5:
         return baseline_action(view)
 
     s = int_state(view)
@@ -187,5 +216,7 @@ def q_learn_action(view, learner):
     #     print(int_action_space(view))
     #     print(learner.Q[s])
     #     print()
+    print(len([x for x in learner.Q[s] if x == 0]))
+    print(len([x for x in learner.Q[s] if x == 0])/len(learner.Q[s]))
 
     return a

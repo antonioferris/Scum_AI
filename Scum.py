@@ -30,16 +30,15 @@ def test_agent(agent, agentname, n_rounds, draw, tick_speed):
     return ap2, wr2
 
 def generate_data(n_rounds, draw, tick_speed):
-    agents = [DataCollectingAgent(Agents.heuristic_action) for _ in range(2)] + [DataCollectingAgent(Agents.baseline_action) for _ in range(3)] + [DataCollectingAgent(Agents.q_learn_action) for _ in range(2)]
-    # agents = [DataCollectingAgent(Agents.q_learn_action) for _ in range(7)]
+    agents = [DataCollectingAgent(Agents.baseline_action, 2) for _ in range(7)]
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
     controller.game(n_rounds)
 
-    with open("data/reward_exp.p", "wb") as f:
+    with open("data/baseline_relative_100000.p", "wb") as f:
         pickle.dump(controller.collected_data, f)
 
     # for testing data pickling
-    with open("data/reward_exp.p", "rb") as f:
+    with open("data/baseline_relative_100000.p", "rb") as f:
         data = pickle.load(f)
 
     subset = random.choices(data, k=20)
@@ -49,11 +48,11 @@ def generate_data(n_rounds, draw, tick_speed):
 
 def main(draw, tick_speed):
     test_state()
-    a = QAgent(Agents.q_learn_action)
+    a = QAgent()
     b = Agent(Agents.heuristic_action)
     c = Agent(Agents.baseline_action)
-    n_rounds = 100
-    n_runs = 50
+    n_rounds = 1
+    n_runs = 1
     sum_ap = 0
     sum_wr = 0
     for _ in range(n_runs):
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     draw = "-d" in sys.argv
     tick_speed = 3 if len(sys.argv) <= 2 else int(sys.argv[2])
     if "-g" in sys.argv:
-        generate_data(10000, draw, tick_speed)
+        generate_data(100000, draw, tick_speed)
     else:
         main(draw, tick_speed)
         quit_pygame()

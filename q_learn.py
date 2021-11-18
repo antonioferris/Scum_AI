@@ -9,19 +9,18 @@ from os.path import exists
 
 class QLearning():
 
-    def __init__(self):
+    def __init__(self, f, episodes=100):
         self.Q = np.zeros((500000, 14))
+        self.data = pickle.load(open(f, "rb"))
+        self.num_episodes = episodes
 
     def q_learn(self):
-        with open("data/baseline_7_100.p", "rb") as f:
-            data = pickle.load(f)
-
-        for state, action, reward, state_prime in data:
-            self.Q[state, action] = self.Q[state, action] + 0.1*(reward + 0.95 * self.Q[state_prime, action] - self.Q[state, action])
+        for _ in range(self.num_episodes):
+            for state, action, reward, state_prime in reversed(self.data):
+                self.Q[state, action] = self.Q[state, action] + 0.1*(reward + 0.95 * self.Q[state_prime, action] - self.Q[state, action])
 
     def optimal_policy(self, state, actions):
         pairs = [(i, x) for i, x in enumerate(self.Q[state]) if i in actions]
-        print("Q", self.Q[state])
         max_index = 0
         max_val = float(-Inf)
         for i, x in pairs:
