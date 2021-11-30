@@ -8,13 +8,13 @@ from State import test_state
 import pickle
 import random
 
-def test_agent_against(agent, opponent_func, n_rounds, n_agents=7, draw=False, tick_speed=3):
+def test_agent_against(agent, opponent_func, n_games, n_rounds, n_agents=7, draw=False, tick_speed=3):
     """
         Tests a given agent against a given type of opponent.
     """
     agents = [agent] + [opponent_func() for _ in range(n_agents-1)]
     controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
-    results = controller.games(1, n_rounds)
+    results = controller.games(n_games, n_rounds)
     return interpret_results(results, display=False)
 
 def interpret_results(results, display=True):
@@ -26,11 +26,11 @@ def interpret_results(results, display=True):
 
     return avg_placement, results[0][0] / n_rounds
 
-def test_agent(agent, agentname, n_rounds, draw, tick_speed):
+def test_agent(agent, agentname, n_games, n_rounds, draw, tick_speed):
     """
         Calls test_agent_against on baseline agents.
     """
-    ap1, wr1 = test_agent_against(agent, getter(Agents.baseline_action), n_rounds, 7, draw=draw, tick_speed=tick_speed)
+    ap1, wr1 = test_agent_against(agent, getter(Agents.baseline_action), n_games, n_rounds, 7, draw=draw, tick_speed=tick_speed)
     print(f"Against baseline opponents, Agent {agentname} had placement {ap1} and winrate {wr1}")
 
     return ap1, wr1
@@ -71,16 +71,12 @@ def main(draw, tick_speed):
     b = Agent(Agents.heuristic_action)
     c = Agent(Agents.baseline_action)
     d = Agent(Agents.randomized_baseline_action)
-    n_rounds = 1000
-    n_runs = 1
-    sum_ap = 0
-    sum_wr = 0
-    for _ in range(n_runs):
-        ap2, wr2 = test_agent(a, "Q-Learning", n_rounds, draw, tick_speed)
-        sum_ap += ap2
-        sum_wr += wr2
-    print("AVERAGE PLACE: ", sum_ap/n_runs)
-    print("AVERAGE WIN RATE: ", sum_wr/n_runs)
+    e = ParamAgent()
+    n_rounds = 5
+    n_games = 1
+    ap, wr = test_agent(e, "Param Agent", n_rounds, n_games, draw, tick_speed)
+    # print("AVERAGE PLACE: ", ap)
+    # print("AVERAGE WIN RATE: ", wr)
 
 
 
