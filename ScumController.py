@@ -153,27 +153,28 @@ class ScumController:
         if self.scum != None:
             self.trade(prev_order)
 
-    def game(self, n_rounds):
+    def games(self, n_games, n_rounds):
         """
             Simulates a game with the loaded agents for n_rounds rounds.
         """
         player_results = [[] for _ in range(self.n)]
         scores = None
-        for r in range(n_rounds):
-            scores = self.round(scores, r) # each round's setup depends on the previous round's results
-            self.gamestate.turn_count = 0
-            self.gamestate.rounds_won[self.gamestate.out[0]] += 1
-            self.gamestate.play_order = self.gamestate.out
-            for i in range(self.n):
-                player_results[scores[i]].append(i)
+        for g in range(n_games):
+            for r in range(n_rounds):
+                scores = self.round(scores, r) # each round's setup depends on the previous round's results
+                self.gamestate.turn_count = 0
+                self.gamestate.rounds_won[self.gamestate.out[0]] += 1
+                self.gamestate.play_order = self.gamestate.out
+                for i in range(self.n):
+                    player_results[scores[i]].append(i)
+
+            # save data if any was collected
+            for agent in self.agents:
+                if isinstance(agent, DataCollectingAgent):
+                    self.collected_data += agent.data
 
         # convert player results to a counter
         nice_results = [Counter(result) for result in player_results]
-
-        # save data if any was collected
-        for agent in self.agents:
-            if isinstance(agent, DataCollectingAgent):
-                self.collected_data += agent.data
 
         return nice_results
 

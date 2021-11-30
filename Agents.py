@@ -47,8 +47,7 @@ class DataCollectingAgent(Agent):
         self.action_function = action_function
         self.data = []
         self.round_data = []
-        self.reward = lambda placement : (7 - placement) / 7 # map reward to 0-1 range
-        self.gamma = 0.95
+        self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to -1, 1 range
         self.QAgent = None
         if action_function == q_learn_action:
             self.QAgent = QAgent(action_function)
@@ -83,12 +82,9 @@ class DataCollectingAgent(Agent):
             return
         for i in range(len(self.round_data) - 1):
             s, a = self.round_data[i]
-
-            if a == 0:
-                r = -5
-
             sp = self.round_data[i + 1][0]
-            r = 0
+
+            r = self.reward(placement) / 100
             if i == len(self.round_data) - 2:
                 r = self.reward(placement)
 
@@ -97,9 +93,9 @@ class DataCollectingAgent(Agent):
         self.round_data = []
 
 class QAgent(Agent):
-    def __init__(self, action_function):
-        self.action_function = action_function
-        self.learner = QLearning()
+    def __init__(self, data_loc):
+        self.action_function = q_learn_action
+        self.learner = QLearning(data_loc)
         self.learner.q_learn()
 
     def get_action(self, view):
@@ -176,16 +172,18 @@ def heuristic_action(view):
     return actions[0]
 
 def q_learn_action(view, learner):
-    if len(view.hand.cards) >= 4:
+    if len(view.hand.cards) >= 5:
         return baseline_action(view)
 
     s = int_state(view)
-    a = learner.optimal_policy(s, int_action_space(view))
+    actions = int_action_space(view)
+    a = learner.optimal_policy(s, actions)
 
-    # if a == baseline_action(view):
-    #     print(view)
-    #     print(int_action_space(view))
-    #     print(learner.Q[s])
-    #     print()
+    # if a != baseline_action(view):
+    print(view)
+    print(int_action_space(view))
+    print([learner.Q[s][a] for a in actions])
+    print()
+    zero_proportion = len()
 
     return a
