@@ -3,12 +3,15 @@
     and the AgentView objects which captures the available information
     given to an agent to make each decision.
 """
+from numpy.lib.function_base import average
 from State import AgentView, int_state, int_action_space, int_to_action
 from Cards import Deck, Hand, Card
 from Cards import all_sets, compute_playable
 from q_learn import QLearning
 import random
 from collections import Counter
+
+zeros = []
 
 class Agent:
     def __init__(self, action_function):
@@ -43,14 +46,21 @@ class Agent:
         return action
 
 class DataCollectingAgent(Agent):
-    def __init__(self, action_function):
+    """
+            An Agent is initialized with an action_function
+            and a selected reward function in [0, 1, 2].
+            This agent is meant for data collection during
+            game simulations.
+        """
+    def __init__(self, action_function, reward_function=0):
         self.action_function = action_function
+        self.reward_function = reward_function
         self.data = []
         self.round_data = []
-        self.reward = lambda placement : (3.5 - placement) / 3.5 # map reward to -1, 1 range
+        self.gamma = 0.95
         self.QAgent = None
         if action_function == q_learn_action:
-            self.QAgent = QAgent(action_function)
+            self.QAgent = QAgent()
 
     def get_action(self, view):
         """
@@ -75,30 +85,81 @@ class DataCollectingAgent(Agent):
 
     def finish_round(self, placement):
         """
-            backprops the rewards for the round
-            and adds the data to self.data
+            Finishes the round by calculating the reward and
+            collecting data.
         """
         if not self.round_data:
             return
-        for i in range(len(self.round_data) - 1):
+        r = 0
+        if self.reward_function == 0:
+            r = self.zero_one_reward(placement)
+        elif self.reward_function == 1:
+            r = self.backprop_reward(placement)
+        else:
+            r = self.relative_reward(placement)
+
+        discount = 1
+        for i in range(len(self.round_data) - 2, -1, -1):
             s, a = self.round_data[i]
+
             sp = self.round_data[i + 1][0]
 
             r = self.reward(placement) / 100
             if i == len(self.round_data) - 2:
                 r = self.reward(placement)
 
-            self.data.append((s, a, r, sp))
+    def zero_one_reward(self, placement):
+        """
+            Assigns a reward of 0 if they did not place first.
+            Otherwise it assigns a reward of 100.
+        """
+        r = 0
+        if placement == 0:
+            r = 100
+        return r
 
-        self.round_data = []
+    def backprop_reward(self, placement):
+        """
+            Backprops the rewards for the round
+            and adds the data to self.data
+        """
+        place = (3.5 - placement) / 3.5
+        r = place * 10 / len(self.round_data)
+        return r
+
+    def relative_reward(self, placement):
+        """
+            Assigns a reward of 1 if they placed first.
+            Otherwise, it returns an increasingly negative
+            reward depending upon how badly the agent does.
+        """
+        r = 0
+        if placement == 0:
+            r = 1
+        else:
+            r = float(placement / -7)
+        return r
+
 
 class QAgent(Agent):
-    def __init__(self, data_loc):
+    """
+        A Q-Agent is initialized and calls creates a
+        Q-Learning object and then generates Q.
+        This function takes in an AgentView, and returns:
+        1. A legal card or list of cards to be played
+        2. "Pass"
+        Any other input will be interpreted as a pass.
+    """
+    def __init__(self):
         self.action_function = q_learn_action
-        self.learner = QLearning(data_loc)
+        self.learner = QLearning("data/randbase_backprop_100000.p")
         self.learner.q_learn()
 
     def get_action(self, view):
+        """
+            Same as Agent's get_action, but handles extra
+            parameter for q_learn_action.
+        """
         if self.auto_passer(view.top_cards, view.hand):
             return "Pass" # pass turn if no playable cards
         action = self.action_function(view, self.learner)
@@ -108,7 +169,6 @@ class QAgent(Agent):
         if isinstance(action, Card):
             action = (action,)
         return action
-
 
 def action_space(view):
     """
@@ -125,9 +185,11 @@ def action_space(view):
                 poss_actions.append(action)
     return poss_actions
 
-
 def random_action(view):
-    return random.choice(action_space(view))
+    """
+        Chooses a random action from those available.
+    """
+    return random.choice(int_action_space(view))
 
 def getter(f):
     return lambda : Agent(f)
@@ -145,6 +207,15 @@ def baseline_action(view):
     if len(actions) > 1:
         return actions[1]
     return actions[0]
+
+def randomized_baseline_action(view):
+    """
+        50% of the time, uses the baseline action.
+        Otherwise, it uses the random action.
+    """
+    if random.random() <= .5:
+        return random_action(view)
+    return baseline_action(view)
 
 def heuristic_action(view):
     """
@@ -172,6 +243,12 @@ def heuristic_action(view):
     return actions[0]
 
 def q_learn_action(view, learner):
+    """
+        When the number of cards is greater than 4, uses
+        baseline action.
+        Otherwise, it calls optimal_policy() to select
+        the action that maximizes Q for the current state.
+    """
     if len(view.hand.cards) >= 5:
         return baseline_action(view)
 
@@ -179,11 +256,13 @@ def q_learn_action(view, learner):
     actions = int_action_space(view)
     a = learner.optimal_policy(s, actions)
 
-    # if a != baseline_action(view):
-    print(view)
-    print(int_action_space(view))
-    print([learner.Q[s][a] for a in actions])
-    print()
-    zero_proportion = len()
+    # if a == baseline_action(view):
+    #     print(view)
+    #     print(int_action_space(view))
+    #     print(learner.Q[s])
+    #     print()
+    # print(s)
+    zeros.append(len([x for i, x in enumerate(learner.Q[s]) if x == 0 and i in actions])/len(actions))
+    print(average(zeros))
 
     return a
