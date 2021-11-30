@@ -4,7 +4,7 @@ import Scum
 
 
 def run_script():
-    Scum.main()
+    Scum.main(False, 3)
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from State import AgentView, int_state, int_action_space, int_to_action
 from Cards import Deck, Hand, Card
 from Cards import all_sets, compute_playable
 from q_learn import QLearning
+from param import ParamModel
 import random
 from collections import Counter
 
@@ -139,6 +140,55 @@ class DataCollectingAgent(Agent):
         else:
             r = float(placement / -7)
         return r
+
+class ParamAgent(DataCollectingAgent):
+    """
+            An Agent is initialized with an action_function
+            and a selected reward function in [0, 1, 2].
+            This agent is meant for data collection during
+            game simulations.
+        """
+    def __init__(self):
+        self.reward_function = 2 # relative reward
+        self.data = []
+        self.round_data = []
+        self.gamma = 0.95
+        self.param_model = ParamModel()
+
+    def action_function(self, view):
+        return self.param_model.get_action(view)
+
+    def get_action(self, view):
+        """
+            Same as Agent's get_action, but accumulates data
+        """
+        if self.auto_passer(view.top_cards, view.hand):
+            return "Pass" # pass turn if no playable cards
+
+        action = self.action_function(view)
+
+        datum = (int_state(view), action) # store data for the future
+        self.round_data.append(self.param_model.X(view, action))
+
+        if isinstance(action, int):
+            action = int_to_action(action, view)
+        if isinstance(action, Card):
+            action = (action,)
+
+        return action
+
+    def finish_round(self, placement):
+        """
+            Finishes the round by calculating the reward and
+            collecting data.
+        """
+        if not self.round_data:
+            return
+
+        r = 0 if placement >= 4 else 1
+
+        for X in self.round_data:
+            self.param_model.learn(X, r)
 
 
 class QAgent(Agent):

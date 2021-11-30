@@ -1,12 +1,13 @@
 from numpy.lib.function_base import average
 from ScumController import ScumController
-from Agents import QAgent, baseline_action, getter, Agent, DataCollectingAgent, heuristic_action
+from Agents import QAgent, ParamAgent, baseline_action, getter, Agent, DataCollectingAgent, heuristic_action
 import Agents
 from graphics import quit_pygame
 import sys
 from State import test_state
 import pickle
 import random
+import time
 
 def test_agent_against(agent, opponent_func, n_games, n_rounds, n_agents=7, draw=False, tick_speed=3):
     """
@@ -67,14 +68,16 @@ def generate_data(n_rounds, draw, tick_speed, reward):
 
 def main(draw, tick_speed):
     test_state()
-    a = QAgent()
+    # a = QAgent()
     b = Agent(Agents.heuristic_action)
     c = Agent(Agents.baseline_action)
     d = Agent(Agents.randomized_baseline_action)
     e = ParamAgent()
-    n_rounds = 5
-    n_games = 1
+    n_rounds = 50
+    n_games = 5
+    t1 = time.time()
     ap, wr = test_agent(e, "Param Agent", n_rounds, n_games, draw, tick_speed)
+    print(f"{(time.time() - t1)}s runtime")
     # print("AVERAGE PLACE: ", ap)
     # print("AVERAGE WIN RATE: ", wr)
 
