@@ -6,11 +6,13 @@
 from river import linear_model
 from State import int_action_space
 import numpy as np
-from random import shuffle
+from random import shuffle, random, choice
 
 class ParamModel():
-    def __init__(self):
+    def __init__(self, exploration=0.9, alpha=0.9999):
         self.model = linear_model.LogisticRegression()
+        self.exploration = exploration
+        self.alpha = alpha
 
     def X(self, view, a):
         X = {
@@ -23,9 +25,13 @@ class ParamModel():
         return X
 
     def get_action(self, view):
+        actions = int_action_space(view)
+        self.exploration *= self.alpha
+        if random() < self.exploration:
+            return choice(actions)
+
         curr_action = None
         curr_p = -1
-        actions = int_action_space(view)
         shuffle(actions)
         for a in actions:
             X = self.X(view, a)

@@ -18,6 +18,14 @@ def test_agent_against(agent, opponent_func, n_games, n_rounds, n_agents=7, draw
     results = controller.games(n_games, n_rounds)
     return interpret_results(results, display=False)
 
+def self_play(agents, n_games, n_rounds, draw=False, tick_speed=3):
+    """
+        Simulated play among the given agents.
+    """
+    controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
+    results = controller.games(n_games, n_rounds)
+    return interpret_results(results, display=False)
+
 def interpret_results(results, display=True):
     """
         Outputs the placement and win rate nicely.
@@ -27,12 +35,12 @@ def interpret_results(results, display=True):
 
     return avg_placement, results[0][0] / n_rounds
 
-def test_agent(agent, agentname, n_games, n_rounds, draw, tick_speed):
+def test_agent(agent, agentname, n_games, n_rounds, draw=False, tick_speed=3):
     """
         Calls test_agent_against on baseline agents.
     """
     ap1, wr1 = test_agent_against(agent, getter(Agents.baseline_action), n_games, n_rounds, 7, draw=draw, tick_speed=tick_speed)
-    print(f"Against baseline opponents, Agent {agentname} had placement {ap1} and winrate {wr1}")
+    # print(f"Against baseline opponents, Agent {agentname} had placement {ap1} and winrate {wr1}")
 
     return ap1, wr1
 
@@ -66,6 +74,23 @@ def generate_data(n_rounds, draw, tick_speed, reward):
             # print(f"{s}, {a}, {r:.2f}, {sp}")
             f.write(f"{s}, {a}, {r:.2f}, {sp} \n")
 
+def learn_test(agents):
+    selfplay_results = []
+    test_results = []
+    selfplay_games = 5
+    selfplay_rounds = 10
+    test_games = 50
+    test_rounds = 100
+    num_iterations = 10
+    t1 = time.time()
+    for i in range(num_iterations):
+        selfplay_results.append(self_play(agents, selfplay_games, selfplay_rounds))
+        test_results.append(test_agent(agents[0], "Param Agent", test_games, test_rounds))
+        print(f"after {i} iterations and {(time.time() - t1):.1f}s runtime, testresults are: {test_results[-1]}")
+
+    return selfplay_results, test_results
+
+
 def main(draw, tick_speed):
     test_state()
     # a = QAgent()
@@ -75,11 +100,14 @@ def main(draw, tick_speed):
     e = ParamAgent()
     n_rounds = 50
     n_games = 5
-    t1 = time.time()
-    ap, wr = test_agent(e, "Param Agent", n_rounds, n_games, draw, tick_speed)
-    print(f"{(time.time() - t1)}s runtime")
+    # t1 = time.time()
+    # ap, wr = test_agent(e, "Param Agent", n_rounds, n_games, draw, tick_speed)
+    # print(f"{(time.time() - t1)}s runtime")
     # print("AVERAGE PLACE: ", ap)
     # print("AVERAGE WIN RATE: ", wr)
+
+    agents = [ParamAgent() for _ in range(7)]
+    learn_test(agents)
 
 
 

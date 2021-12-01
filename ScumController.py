@@ -187,6 +187,8 @@ class ScumController:
         for i in range(MAX_ITER + 1):
             if i == MAX_ITER:
                 print(str(self.gamestate))
+                for agent in self.agents:
+                    print(agent.param_model.exploration)
                 raise ValueError("Max Iter reached")
                 return [0] * self.n
 
@@ -221,7 +223,11 @@ class ScumController:
 
         if all(self.gamestate.passed[i] or i in self.gamestate.out for i in range(self.n)): # all players have passed or out, move play to the last_player to lead.
             self.gamestate.passed = [False] * self.n  # reset passed list
-            self.incr_player(self.gamestate.last_player)
+            if self.gamestate.last_player not in self.gamestate.out:
+                self.incr_player(self.gamestate.last_player)
+            else:
+                while self.curr_player in self.gamestate.out:
+                    self.incr_player()
             self.gamestate.top_cards = [] # reset top cards
 
             if self.draw:
