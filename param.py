@@ -22,12 +22,12 @@ class ParamModel():
             return actions[0]
         X = {
             "like_baseline" : 1 if a == baseline() else 0,
-            # "action" : a,
-            # "Out Count" : len(view.out),
-            # "Top Card Rank" : view.top_cards[0].rank()-1 if view.top_cards else 0,
-            # "Top Card Count" : len(view.top_cards)
+            "action" : a,
+            "Out Count" : len(view.out),
+            "Top Card Rank" : view.top_cards[0].rank()-1 if view.top_cards else 0,
+            "Top Card Count" : len(view.top_cards)
         }
-        # X.update(dict(enumerate(view.hand_lengths + view.passed + [1 if i == view.last_player else 0 for i in range(7)])))
+        X.update(dict(enumerate(view.hand_lengths + view.passed + [1 if i == view.last_player else 0 for i in range(7)])))
         return X
 
     def get_action(self, view):
