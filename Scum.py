@@ -152,6 +152,11 @@ def final_tournament(draw, tick_speed):
     df = pd.DataFrame(results_dict) 
     df.to_csv('results/tournament_results.csv') 
 
+    avgs_dict = {"Random Avg":moving_avg[0], "Baseline Avg":moving_avg[1], 
+                    "Heuristic Avg":moving_avg[2], "Q-Learning Avg":moving_avg[3], "Parameter Learning Avg":moving_avg[4]}
+    df2 = pd.DataFrame(avgs_dict) 
+    df2.to_csv('results/tournament_avgs.csv') 
+
 
 
 
