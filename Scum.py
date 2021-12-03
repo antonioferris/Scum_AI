@@ -9,6 +9,8 @@ import pickle
 import random
 import time
 
+import matplotlib.pyplot as plt
+
 def test_agent_against(agent, opponent_func, n_games, n_rounds, n_agents=7, draw=False, tick_speed=3):
     """
         Tests a given agent against a given type of opponent.
@@ -77,16 +79,18 @@ def generate_data(n_rounds, draw, tick_speed, reward):
 def learn_test(agents):
     selfplay_results = []
     test_results = []
-    selfplay_games = 5
+    selfplay_games = 10
     selfplay_rounds = 10
-    test_games = 50
-    test_rounds = 100
-    num_iterations = 10
+    test_games = 10
+    test_rounds = 10
+    num_iterations = 100
     t1 = time.time()
     for i in range(num_iterations):
         selfplay_results.append(self_play(agents, selfplay_games, selfplay_rounds))
         test_results.append(test_agent(agents[0], "Param Agent", test_games, test_rounds))
         print(f"after {i} iterations and {(time.time() - t1):.1f}s runtime, testresults are: {test_results[-1]}")
+        with open(f"dump_param_v3_{i}.p", "wb") as f:
+            pickle.dump(agents, f)
 
     return selfplay_results, test_results
 
@@ -106,8 +110,25 @@ def main(draw, tick_speed):
     # print("AVERAGE PLACE: ", ap)
     # print("AVERAGE WIN RATE: ", wr)
 
-    agents = [ParamAgent() for _ in range(7)]
-    learn_test(agents)
+    # agents = [ParamAgent() for _ in range(7)]
+    # learn_test(agents)
+    aps = []
+    wrs = []
+    for i in range(15):
+        agents_old = pickle.load(open("dump_param_v3_14.p", "rb"))
+        agents = [ParamAgent() for _ in range(7)]
+        for i in range(7):
+            agents[i].param_model = agents_old[i].param_model
+        ap, wr = test_agent_against(agents[0], getter(Agents.baseline_action), 100, 10)
+        print(ap, wr)
+        aps.append(ap)
+        wrs.append(wr)
+
+    plt.plot(range(15), aps)
+    plt.show()
+
+
+
 
 
 
