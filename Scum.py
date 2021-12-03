@@ -170,25 +170,6 @@ def main(draw, tick_speed):
     # c = Agent(Agents.baseline_action)
     # d = Agent(Agents.randomized_baseline_action)
     # e = ParamAgent()
-    n_rounds = 10
-    n_games = 10
-
-    agentso = pickle.load(open("dump_param_v3_14.p", "rb"))
-    agents = [ParamAgent() for _ in range(7)]
-    for i in range(7)
-        agents[i].para_model = agentso[i].param_model
-
-    controller = ScumController(agents, draw=draw, tick_speed=tick_speed)
-    results = controller.games(n_games, n_rounds)
-
-    n_rounds = sum(cnt for _, cnt in results[agent].items())
-    for k in range(7):
-        avg_placement = sum((placement + 1) * cnt for placement, cnt in results[agent].items()) / n_rounds
-        print(avg_placement)
-
-
-
-
 
     # pickle.dump(a.get_q(), open("Q/q_randbase_100_50.p", "wb"))
 
@@ -211,7 +192,7 @@ def main(draw, tick_speed):
     # agents = [QAgent("data/randbase_backprop_100000.p") for _ in range(7)]
     # learn_test(agents)
 
-    # final_tournament(draw, tick_speed)
+    final_tournament(draw, tick_speed)
 
 
 
