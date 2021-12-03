@@ -94,10 +94,8 @@ class DataCollectingAgent(Agent):
         r = 0
         if self.reward_function == 0:
             r = self.zero_one_reward(placement)
-        elif self.reward_function == 1:
-            r = self.backprop_reward(placement)
         else:
-            r = self.relative_reward(placement)
+            r = self.backprop_reward(placement)
 
         discount = 1
         for i in range(len(self.round_data) - 2, -1, -1):
@@ -126,19 +124,6 @@ class DataCollectingAgent(Agent):
         """
         place = (3.5 - placement) / 3.5
         r = place * 10 / len(self.round_data)
-        return r
-
-    def relative_reward(self, placement):
-        """
-            Assigns a reward of 1 if they placed first.
-            Otherwise, it returns an increasingly negative
-            reward depending upon how badly the agent does.
-        """
-        r = 0
-        if placement == 0:
-            r = 1
-        else:
-            r = float(placement / -7)
         return r
 
 class ParamAgent(DataCollectingAgent):
@@ -191,7 +176,7 @@ class ParamAgent(DataCollectingAgent):
             self.param_model.learn(X, r)
 
 
-class QAgent(Agent):
+class QAgent(DataCollectingAgent):
     """
         A Q-Agent is initialized and calls creates a
         Q-Learning object and then generates Q.
@@ -200,10 +185,12 @@ class QAgent(Agent):
         2. "Pass"
         Any other input will be interpreted as a pass.
     """
-    def __init__(self):
+    def __init__(self, file):
+        print("Initializing QAgent...")
         self.action_function = q_learn_action
-        self.learner = QLearning("data/randbase_backprop_100000.p")
-        self.learner.q_learn()
+        self.learner = QLearning()
+        self.round_data = []
+        self.data = []
 
     def get_action(self, view):
         """
@@ -214,11 +201,30 @@ class QAgent(Agent):
             return "Pass" # pass turn if no playable cards
         action = self.action_function(view, self.learner)
 
+        datum = (int_state(view), action) # store data for the future
+        self.round_data.append(datum)
+
         if isinstance(action, int):
             action = int_to_action(action, view)
         if isinstance(action, Card):
             action = (action,)
         return action
+
+    def finish_round(self, placement):
+        """
+            Finishes the round by calculating the reward and
+            collecting data.
+        """
+        if not self.round_data:
+            return
+
+        r = self.backprop_reward(placement)
+
+        self.learner.q_learn(self.round_data, r)
+        self.round_data = []
+
+    def get_q(self):
+        return self.learner.get_q()
 
 def action_space(view):
     """
@@ -305,14 +311,5 @@ def q_learn_action(view, learner):
     s = int_state(view)
     actions = int_action_space(view)
     a = learner.optimal_policy(s, actions)
-
-    # if a == baseline_action(view):
-    #     print(view)
-    #     print(int_action_space(view))
-    #     print(learner.Q[s])
-    #     print()
-    # print(s)
-    zeros.append(len([x for i, x in enumerate(learner.Q[s]) if x == 0 and i in actions])/len(actions))
-    print(average(zeros))
 
     return a
